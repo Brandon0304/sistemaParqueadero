@@ -1,0 +1,64 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: parqueadero-db
+    environment:
+      POSTGRES_DB: parqueadero_db
+      POSTGRES_USER: parqueadero_user
+      POSTGRES_PASSWORD: parqueadero_pass
+    ports:
+      - "5435:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - parqueadero-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U parqueadero_user -d parqueadero_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: parqueadero-backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/parqueadero_db
+      SPRING_DATASOURCE_USERNAME: parqueadero_user
+      SPRING_DATASOURCE_PASSWORD: parqueadero_pass
+      JWT_SECRET: parqueadero-secret-key-change-in-production-2024
+      JWT_EXPIRATION: 86400000
+    ports:
+      - "8082:8080"
+    networks:
+      - parqueadero-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: parqueadero-frontend
+    depends_on:
+      - backend
+    environment:
+      VITE_API_URL: http://localhost:8082/api
+    ports:
+      - "5174:5173"
+    networks:
+      - parqueadero-network
+
+volumes:
+  postgres_data:
+
+networks:
+  parqueadero-network:
+    driver: bridge

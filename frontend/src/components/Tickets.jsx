@@ -7,6 +7,8 @@ import QRScanner from './QRScanner';
 import VehiculoAutocomplete from './VehiculoAutocomplete';
 import ConfirmModal from './ConfirmModal';
 import LoadingSpinner from './LoadingSpinner';
+import FiltrosTickets from './FiltrosTickets';
+import Paginacion from './Paginacion';
 import { formatearCOP } from '../utils/moneda';
 
 const Tickets = () => {
@@ -31,18 +33,69 @@ const Tickets = () => {
   });
   const [codigoSalida, setCodigoSalida] = useState('');
   const [tarifaCalculada, setTarifaCalculada] = useState(null);
+  
+  // Estados para filtros y paginación
+  const [mostrarFiltros, setMostrarFiltros] = useState(false);
+  const [filtros, setFiltros] = useState({
+    fechaDesde: '',
+    fechaHasta: '',
+    tipoVehiculo: '',
+    estado: '',
+    placa: '',
+    page: 0,
+    size: 20
+  });
+  const [paginaInfo, setPaginaInfo] = useState({
+    totalElements: 0,
+    totalPages: 0,
+    page: 0,
+    size: 20,
+    first: true,
+    last: true
+  });
+  
   const navigate = useNavigate();
 
   useEffect(() => {
     cargarDatos();
-  }, []);
+  }, [filtros.page]); // Recargar cuando cambie la página
 
   const cargarDatos = async () => {
     try {
-      const [ticketsData, vehiculosData] = await Promise.all([
-        TicketService.listarTodos(),
-        VehiculoService.listarTodos()
-      ]);
+      setLoading(true);
+      
+      // Si hay filtros activos, usar endpoint de filtros
+      const hayFiltrosActivos = filtros.fechaDesde || filtros.fechaHasta || 
+                                filtros.tipoVehiculo || filtros.estado || filtros.placa;
+      
+      let ticketsData;
+      if (hayFiltrosActivos || mostrarFiltros) {
+        // Usar endpoint con filtros y paginación
+        const response = await TicketService.listarConFiltros(filtros);
+        ticketsData = response.content;
+        setPaginaInfo({
+          totalElements: response.totalElements,
+          totalPages: response.totalPages,
+          page: response.page,
+          size: response.size,
+          first: response.first,
+          last: response.last
+        });
+      } else {
+        // Usar endpoint sin filtros (todos los tickets)
+        ticketsData = await TicketService.listarTodos();
+        setPaginaInfo({
+          totalElements: ticketsData.length,
+          totalPages: 1,
+          page: 0,
+          size: ticketsData.length,
+          first: true,
+          last: true
+        });
+      }
+      
+      const vehiculosData = await VehiculoService.listarTodos();
+      
       setTickets(ticketsData);
       setVehiculos(vehiculosData);
       setError('');
@@ -130,6 +183,35 @@ const Tickets = () => {
     setShowConfirmModal(true);
   };
 
+  // Handlers para filtros y paginación
+  const handleFiltrosChange = (nuevosFiltros) => {
+    setFiltros(nuevosFiltros);
+  };
+
+  const handleBuscarConFiltros = () => {
+    setFiltros({ ...filtros, page: 0 }); // Resetear a página 0 al buscar
+    cargarDatos();
+  };
+
+  const handleLimpiarFiltros = () => {
+    setFiltros({
+      fechaDesde: '',
+      fechaHasta: '',
+      tipoVehiculo: '',
+      estado: '',
+      placa: '',
+      page: 0,
+      size: 20
+    });
+    setMostrarFiltros(false);
+    // Esperar a que se actualice el estado antes de recargar
+    setTimeout(() => cargarDatos(), 100);
+  };
+
+  const handleCambiarPagina = (nuevaPagina) => {
+    setFiltros({ ...filtros, page: nuevaPagina });
+  };
+
   const getEstadoBadge = (estado) => {
     const badges = {
       ACTIVO: 'badge-success',
@@ -175,6 +257,13 @@ const Tickets = () => {
           <button onClick={() => navigate('/dashboard')} className="btn btn-secondary">
             Volver
           </button>
+          <button 
+            onClick={() => setMostrarFiltros(!mostrarFiltros)} 
+            className="btn btn-primary"
+            style={{ marginRight: '10px' }}
+          >
+            {mostrarFiltros ? '🔍 Ocultar Filtros' : '🔍 Mostrar Filtros'}
+          </button>
           <button onClick={() => setShowEntrada(!showEntrada)} className="btn btn-success">
             {showEntrada ? 'Cancelar' : 'Registrar Entrada'}
           </button>
@@ -185,6 +274,16 @@ const Tickets = () => {
       </div>
 
       <div className="container">
+        {/* Componente de Filtros */}
+        {mostrarFiltros && (
+          <FiltrosTickets
+            filtros={filtros}
+            onFiltrosChange={handleFiltrosChange}
+            onBuscar={handleBuscarConFiltros}
+            onLimpiar={handleLimpiarFiltros}
+          />
+        )}
+
         {error && <div className="alert alert-error">{error}</div>}
         {success && <div className="alert alert-success">{success}</div>}
 
@@ -407,6 +506,16 @@ const Tickets = () => {
                 ))}
               </tbody>
             </table>
+          )}
+          
+          {/* Componente de Paginación */}
+          {tickets.length > 0 && (
+            <Paginacion
+              paginaActual={paginaInfo.page}
+              totalPaginas={paginaInfo.totalPages}
+              totalElementos={paginaInfo.totalElements}
+              onCambiarPagina={handleCambiarPagina}
+            />
           )}
         </div>
       </div>

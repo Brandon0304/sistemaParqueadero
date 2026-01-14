@@ -3,31 +3,58 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext';
 import configuracionService from '../services/configuracionService';
+import EstadisticasService from '../services/estadisticasService';
 import LoadingSpinner from './LoadingSpinner';
 import SkeletonLoader from './SkeletonLoader';
+import GraficoOcupacion from './graficos/GraficoOcupacion';
+import GraficoIngresos from './graficos/GraficoIngresos';
+import GraficoDistribucion from './graficos/GraficoDistribucion';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [espacios, setEspacios] = useState(null);
+  const [resumen, setResumen] = useState(null);
+  const [ocupacion, setOcupacion] = useState([]);
+  const [ingresos, setIngresos] = useState([]);
+  const [distribucion, setDistribucion] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    cargarEspacios();
+    cargarDatos();
     // Actualizar cada 30 segundos
-    const interval = setInterval(cargarEspacios, 30000);
+    const interval = setInterval(cargarDatos, 30000);
     return () => clearInterval(interval);
   }, []);
 
-  const cargarEspacios = async () => {
+  const cargarDatos = async () => {
     try {
       setError(null);
-      const data = await configuracionService.obtenerEspaciosDisponibles();
-      setEspacios(data.espacios);
+      
+      // Cargar todos los datos en paralelo
+      const [
+        espaciosData,
+        resumenData,
+        ocupacionData,
+        ingresosData,
+        distribucionData
+      ] = await Promise.all([
+        configuracionService.obtenerEspaciosDisponibles(),
+        EstadisticasService.obtenerResumenHoy(),
+        EstadisticasService.obtenerOcupacionPorHora(),
+        EstadisticasService.obtenerIngresosDiarios(),
+        EstadisticasService.obtenerDistribucionVehiculos()
+      ]);
+      
+      setEspacios(espaciosData.espacios);
+      setResumen(resumenData);
+      setOcupacion(ocupacionData);
+      setIngresos(ingresosData);
+      setDistribucion(distribucionData);
     } catch (error) {
-      console.error('Error al cargar espacios:', error);
-      const mensaje = 'No se pudieron cargar los espacios disponibles';
+      console.error('Error al cargar datos:', error);
+      const mensaje = 'No se pudieron cargar los datos del dashboard';
       setError(mensaje);
       toast.error(mensaje);
     } finally {
@@ -199,6 +226,98 @@ const Dashboard = () => {
             </div>
           )}
         </div>
+
+        {/* KPIs del día */}
+        {!loading && resumen && (
+          <div className="card" style={{ marginBottom: '24px' }}>
+            <h2 style={{ marginBottom: '16px', fontSize: '1.25rem', fontWeight: '600' }}>
+              📈 Resumen del Día
+            </h2>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px' }}>
+              {/* Vehículos Activos */}
+              <div style={{ 
+                padding: '16px', 
+                backgroundColor: '#eff6ff', 
+                border: '2px solid #3b82f6',
+                borderRadius: '8px',
+                textAlign: 'center'
+              }}>
+                <div style={{ fontSize: '2rem', marginBottom: '8px' }}>🚗</div>
+                <div style={{ fontSize: '1.75rem', fontWeight: '700', color: '#1e40af', marginBottom: '4px' }}>
+                  {resumen.vehiculosActivos}
+                </div>
+                <div style={{ fontSize: '0.75rem', color: '#4b5563', fontWeight: '500' }}>
+                  Vehículos Activos
+                </div>
+              </div>
+
+              {/* Vehículos Salidos */}
+              <div style={{ 
+                padding: '16px', 
+                backgroundColor: '#f0fdf4', 
+                border: '2px solid #10b981',
+                borderRadius: '8px',
+                textAlign: 'center'
+              }}>
+                <div style={{ fontSize: '2rem', marginBottom: '8px' }}>✅</div>
+                <div style={{ fontSize: '1.75rem', fontWeight: '700', color: '#047857', marginBottom: '4px' }}>
+                  {resumen.vehiculosSalidos}
+                </div>
+                <div style={{ fontSize: '0.75rem', color: '#4b5563', fontWeight: '500' }}>
+                  Salidas Hoy
+                </div>
+              </div>
+
+              {/* Ingresos del Día */}
+              <div style={{ 
+                padding: '16px', 
+                backgroundColor: '#fefce8', 
+                border: '2px solid #eab308',
+                borderRadius: '8px',
+                textAlign: 'center'
+              }}>
+                <div style={{ fontSize: '2rem', marginBottom: '8px' }}>💰</div>
+                <div style={{ fontSize: '1.75rem', fontWeight: '700', color: '#a16207', marginBottom: '4px' }}>
+                  ${resumen.ingresosHoy.toFixed(2)}
+                </div>
+                <div style={{ fontSize: '0.75rem', color: '#4b5563', fontWeight: '500' }}>
+                  Ingresos Hoy
+                </div>
+              </div>
+
+              {/* Tiempo Promedio */}
+              <div style={{ 
+                padding: '16px', 
+                backgroundColor: '#faf5ff', 
+                border: '2px solid #a855f7',
+                borderRadius: '8px',
+                textAlign: 'center'
+              }}>
+                <div style={{ fontSize: '2rem', marginBottom: '8px' }}>⏱️</div>
+                <div style={{ fontSize: '1.75rem', fontWeight: '700', color: '#7e22ce', marginBottom: '4px' }}>
+                  {resumen.tiempoPromedioMinutos.toFixed(0)}m
+                </div>
+                <div style={{ fontSize: '0.75rem', color: '#4b5563', fontWeight: '500' }}>
+                  Tiempo Promedio
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Gráficos */}
+        {!loading && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(450px, 1fr))', gap: '24px', marginBottom: '24px' }}>
+            <GraficoOcupacion datos={ocupacion} />
+            <GraficoIngresos datos={ingresos} />
+          </div>
+        )}
+
+        {!loading && distribucion.length > 0 && (
+          <div style={{ marginBottom: '24px', maxWidth: '600px', margin: '0 auto 24px' }}>
+            <GraficoDistribucion datos={distribucion} />
+          </div>
+        )}
 
         <h2 style={{ marginBottom: '24px', fontSize: '1.25rem', fontWeight: '600' }}>Panel de Control</h2>
         <div className="grid">

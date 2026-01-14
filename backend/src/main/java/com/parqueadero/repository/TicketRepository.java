@@ -30,4 +30,6 @@ public interface TicketRepository extends JpaRepository<Ticket, Long>, JpaSpecif
     @Query("SELECT COUNT(t) FROM Ticket t WHERE t.vehiculo.tipo = :tipoVehiculo AND t.estado = :estado")
     long countByVehiculoTipoAndEstado(@Param("tipoVehiculo") Vehiculo.TipoVehiculo tipoVehiculo, 
                                        @Param("estado") Ticket.EstadoTicket estado);
+    
+    long countByEstado(Ticket.EstadoTicket estado);
 }

@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext';
 import configuracionService from '../services/configuracionService';
+import LoadingSpinner from './LoadingSpinner';
+import SkeletonLoader from './SkeletonLoader';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -24,7 +27,9 @@ const Dashboard = () => {
       setEspacios(data.espacios);
     } catch (error) {
       console.error('Error al cargar espacios:', error);
-      setError('No se pudieron cargar los espacios disponibles');
+      const mensaje = 'No se pudieron cargar los espacios disponibles';
+      setError(mensaje);
+      toast.error(mensaje);
     } finally {
       setLoading(false);
     }
@@ -79,14 +84,19 @@ const Dashboard = () => {
           </h2>
           
           {loading && (
-            <p style={{ color: '#6b7280', fontSize: '0.875rem' }}>Cargando espacios...</p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px' }}>
+              <SkeletonLoader type="card" />
+              <SkeletonLoader type="card" />
+              <SkeletonLoader type="card" />
+              <SkeletonLoader type="card" />
+            </div>
           )}
           
-          {error && (
+          {!loading && error && (
             <p style={{ color: '#dc2626', fontSize: '0.875rem' }}>{error}</p>
           )}
           
-          {espacios && (
+          {!loading && espacios && (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px' }}>
               {Object.entries(espacios).map(([tipo, detalle]) => {
                 const color = getColorByPercentage(detalle.porcentajeOcupacion);

@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import VehiculoService from '../services/vehiculoService';
+import LoadingSpinner from './LoadingSpinner';
+import SkeletonLoader from './SkeletonLoader';
 
 const Vehiculos = () => {
   const [vehiculos, setVehiculos] = useState([]);
@@ -24,8 +27,11 @@ const Vehiculos = () => {
     try {
       const data = await VehiculoService.listarTodos();
       setVehiculos(data);
+      setError('');
     } catch (err) {
-      setError('Error al cargar los vehículos');
+      const mensaje = 'Error al cargar los vehículos';
+      setError(mensaje);
+      toast.error(mensaje);
     } finally {
       setLoading(false);
     }
@@ -35,11 +41,15 @@ const Vehiculos = () => {
     e.preventDefault();
     try {
       await VehiculoService.registrar(formData);
+      toast.success('Vehículo registrado exitosamente');
       setShowForm(false);
       setFormData({ placa: '', tipo: 'AUTO', marca: '', modelo: '', color: '' });
+      setError('');
       cargarVehiculos();
     } catch (err) {
-      setError(err.response?.data?.message || 'Error al registrar el vehículo');
+      const mensaje = err.response?.data?.message || 'Error al registrar el vehículo';
+      setError(mensaje);
+      toast.error(mensaje);
     }
   };
 
@@ -47,7 +57,7 @@ const Vehiculos = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  if (loading) return <div className="loading">Cargando...</div>;
+  if (loading) return <LoadingSpinner message="Cargando vehículos..." />;
 
   return (
     <div>

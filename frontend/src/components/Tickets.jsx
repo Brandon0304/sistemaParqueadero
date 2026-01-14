@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import TicketService from '../services/ticketService';
 import VehiculoService from '../services/vehiculoService';
 import QRScanner from './QRScanner';
 import VehiculoAutocomplete from './VehiculoAutocomplete';
 import ConfirmModal from './ConfirmModal';
+import LoadingSpinner from './LoadingSpinner';
 import { formatearCOP } from '../utils/moneda';
 
 const Tickets = () => {
@@ -43,8 +45,11 @@ const Tickets = () => {
       ]);
       setTickets(ticketsData);
       setVehiculos(vehiculosData);
+      setError('');
     } catch (err) {
-      setError('Error al cargar los datos');
+      const mensaje = 'Error al cargar los datos';
+      setError(mensaje);
+      toast.error(mensaje);
     } finally {
       setLoading(false);
     }
@@ -69,22 +74,24 @@ const Tickets = () => {
           color: nuevoVehiculo.color
         };
       } else {
-        setError('Debe seleccionar un vehículo o crear uno nuevo');
+        toast.warning('Debe seleccionar un vehículo o crear uno nuevo');
         return;
       }
       
       await TicketService.registrarEntrada(payload);
-      setSuccess('Entrada registrada exitosamente');
+      toast.success('✅ Entrada registrada exitosamente');
       setShowEntrada(false);
       setVehiculoId('');
       setBusquedaPlaca('');
       setVehiculoSeleccionado(null);
       setMostrarFormularioNuevo(false);
       setNuevoVehiculo({ placa: '', tipo: 'AUTO', marca: '', modelo: '', color: '' });
+      setError('');
       cargarDatos();
-      setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
-      setError(err.response?.data?.message || 'Error al registrar la entrada');
+      const mensaje = err.response?.data?.message || 'Error al registrar la entrada';
+      setError(mensaje);
+      toast.error(mensaje);
     }
   };
 
@@ -92,28 +99,32 @@ const Tickets = () => {
     try {
       const tarifa = await TicketService.calcularTarifa(codigoSalida);
       setTarifaCalculada(tarifa);
+      toast.info('Tarifa calculada correctamente');
     } catch (err) {
-      setError('Error al calcular la tarifa');
+      const mensaje = 'Error al calcular la tarifa';
+      toast.error(mensaje);
     }
   };
 
   const handleSalida = async () => {
     try {
       await TicketService.registrarSalida(codigoSalida);
-      setSuccess('Salida registrada exitosamente');
+      toast.success('✅ Salida registrada y pago procesado');
       setShowSalida(false);
       setCodigoSalida('');
       setTarifaCalculada(null);
+      setError('');
       cargarDatos();
-      setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
-      setError(err.response?.data?.message || 'Error al registrar la salida');
+      const mensaje = err.response?.data?.message || 'Error al registrar la salida';
+      setError(mensaje);
+      toast.error(mensaje);
     }
   };
   
   const confirmarSalida = () => {
     if (!tarifaCalculada) {
-      setError('Debe calcular la tarifa antes de registrar la salida');
+      toast.warning('Debe calcular la tarifa antes de registrar la salida');
       return;
     }
     setShowConfirmModal(true);
@@ -135,11 +146,9 @@ const Tickets = () => {
   const handleDescargarFactura = async (codigo) => {
     try {
       await TicketService.descargarFactura(codigo);
-      setSuccess('Factura descargada exitosamente');
-      setTimeout(() => setSuccess(''), 3000);
+      toast.success('📄 Factura descargada exitosamente');
     } catch (err) {
-      setError('Error al descargar la factura');
-      setTimeout(() => setError(''), 3000);
+      toast.error('Error al descargar la factura');
     }
   };
 
@@ -156,7 +165,7 @@ const Tickets = () => {
     }
   };
 
-  if (loading) return <div className="loading">Cargando...</div>;
+  if (loading) return <LoadingSpinner message="Cargando tickets..." />;
 
   return (
     <div>

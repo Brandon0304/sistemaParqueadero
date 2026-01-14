@@ -1,7 +1,9 @@
 package com.parqueadero.service;
 
 import com.parqueadero.dto.CalculoTarifaResponse;
+import com.parqueadero.dto.PagedResponse;
 import com.parqueadero.dto.TicketEntradaRequest;
+import com.parqueadero.dto.TicketFiltroRequest;
 import com.parqueadero.dto.TicketResponse;
 import com.parqueadero.dto.VehiculoRequest;
 import com.parqueadero.exception.BusinessException;
@@ -17,7 +19,11 @@ import com.parqueadero.repository.TarifaRepository;
 import com.parqueadero.repository.TicketRepository;
 import com.parqueadero.repository.UsuarioRepository;
 import com.parqueadero.repository.VehiculoRepository;
+import com.parqueadero.specification.TicketSpecification;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
@@ -151,6 +157,32 @@ public class TicketService {
         return ticketRepository.findByEstado(Ticket.EstadoTicket.ACTIVO).stream()
                 .map(this::convertirAResponse)
                 .collect(Collectors.toList());
+    }
+
+    public PagedResponse<TicketResponse> listarConFiltros(TicketFiltroRequest filtro) {
+        Pageable pageable = PageRequest.of(
+                filtro.getPage() != null ? filtro.getPage() : 0,
+                filtro.getSize() != null ? filtro.getSize() : 20
+        );
+
+        Page<Ticket> page = ticketRepository.findAll(
+                TicketSpecification.conFiltros(filtro),
+                pageable
+        );
+
+        List<TicketResponse> content = page.getContent().stream()
+                .map(this::convertirAResponse)
+                .collect(Collectors.toList());
+
+        return new PagedResponse<>(
+                content,
+                page.getNumber(),
+                page.getSize(),
+                page.getTotalElements(),
+                page.getTotalPages(),
+                page.isFirst(),
+                page.isLast()
+        );
     }
 
     public CalculoTarifaResponse calcularTarifa(String codigo) {

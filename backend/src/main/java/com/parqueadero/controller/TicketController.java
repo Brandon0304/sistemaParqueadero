@@ -1,12 +1,15 @@
 package com.parqueadero.controller;
 
 import com.parqueadero.dto.CalculoTarifaResponse;
+import com.parqueadero.dto.PagedResponse;
 import com.parqueadero.dto.TicketEntradaRequest;
+import com.parqueadero.dto.TicketFiltroRequest;
 import com.parqueadero.dto.TicketResponse;
 import com.parqueadero.service.PdfService;
 import com.parqueadero.service.TicketService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -14,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -60,6 +64,30 @@ public class TicketController {
     public ResponseEntity<List<TicketResponse>> listarActivos() {
         List<TicketResponse> tickets = ticketService.listarActivos();
         return ResponseEntity.ok(tickets);
+    }
+
+    @GetMapping("/filtrar")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OPERADOR')")
+    public ResponseEntity<PagedResponse<TicketResponse>> listarConFiltros(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fechaDesde,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fechaHasta,
+            @RequestParam(required = false) String tipoVehiculo,
+            @RequestParam(required = false) String estado,
+            @RequestParam(required = false) String placa,
+            @RequestParam(defaultValue = "0") Integer page,
+            @RequestParam(defaultValue = "20") Integer size
+    ) {
+        TicketFiltroRequest filtro = new TicketFiltroRequest();
+        filtro.setFechaDesde(fechaDesde);
+        filtro.setFechaHasta(fechaHasta);
+        filtro.setTipoVehiculo(tipoVehiculo);
+        filtro.setEstado(estado);
+        filtro.setPlaca(placa);
+        filtro.setPage(page);
+        filtro.setSize(size);
+
+        PagedResponse<TicketResponse> response = ticketService.listarConFiltros(filtro);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/calcular/{codigo}")

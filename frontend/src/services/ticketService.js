@@ -26,6 +26,21 @@ const TicketService = {
     return response.data;
   },
 
+  listarConFiltros: async (filtros) => {
+    const params = new URLSearchParams();
+    
+    if (filtros.fechaDesde) params.append('fechaDesde', filtros.fechaDesde);
+    if (filtros.fechaHasta) params.append('fechaHasta', filtros.fechaHasta);
+    if (filtros.tipoVehiculo) params.append('tipoVehiculo', filtros.tipoVehiculo);
+    if (filtros.estado) params.append('estado', filtros.estado);
+    if (filtros.placa) params.append('placa', filtros.placa);
+    if (filtros.page !== undefined) params.append('page', filtros.page);
+    if (filtros.size !== undefined) params.append('size', filtros.size);
+    
+    const response = await api.get(`/tickets/filtrar?${params.toString()}`);
+    return response.data;
+  },
+
   calcularTarifa: async (codigo) => {
     const response = await api.get(`/tickets/calcular/${codigo}`);
     return response.data;

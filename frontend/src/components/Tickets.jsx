@@ -212,6 +212,54 @@ const Tickets = () => {
     setFiltros({ ...filtros, page: nuevaPagina });
   };
 
+  const handleExportarExcel = async () => {
+    try {
+      setLoading(true);
+      toast.info('Generando archivo Excel...');
+      
+      // Usar filtros actuales (sin paginación)
+      const filtrosExport = {
+        fechaDesde: filtros.fechaDesde,
+        fechaHasta: filtros.fechaHasta,
+        tipoVehiculo: filtros.tipoVehiculo,
+        estado: filtros.estado,
+        placa: filtros.placa
+      };
+      
+      await TicketService.exportarExcel(filtrosExport);
+      toast.success('✅ Archivo Excel descargado correctamente');
+    } catch (error) {
+      console.error('Error al exportar Excel:', error);
+      toast.error('Error al exportar archivo Excel');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleExportarPDF = async () => {
+    try {
+      setLoading(true);
+      toast.info('Generando archivo PDF...');
+      
+      // Usar filtros actuales (sin paginación)
+      const filtrosExport = {
+        fechaDesde: filtros.fechaDesde,
+        fechaHasta: filtros.fechaHasta,
+        tipoVehiculo: filtros.tipoVehiculo,
+        estado: filtros.estado,
+        placa: filtros.placa
+      };
+      
+      await TicketService.exportarPDF(filtrosExport);
+      toast.success('✅ Archivo PDF descargado correctamente');
+    } catch (error) {
+      console.error('Error al exportar PDF:', error);
+      toast.error('Error al exportar archivo PDF');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getEstadoBadge = (estado) => {
     const badges = {
       ACTIVO: 'badge-success',
@@ -263,6 +311,22 @@ const Tickets = () => {
             style={{ marginRight: '10px' }}
           >
             {mostrarFiltros ? '🔍 Ocultar Filtros' : '🔍 Mostrar Filtros'}
+          </button>
+          <button 
+            onClick={handleExportarExcel} 
+            className="btn btn-success"
+            style={{ marginRight: '10px' }}
+            disabled={loading}
+          >
+            📊 Exportar Excel
+          </button>
+          <button 
+            onClick={handleExportarPDF} 
+            className="btn btn-success"
+            style={{ marginRight: '10px' }}
+            disabled={loading}
+          >
+            📄 Exportar PDF
           </button>
           <button onClick={() => setShowEntrada(!showEntrada)} className="btn btn-success">
             {showEntrada ? 'Cancelar' : 'Registrar Entrada'}

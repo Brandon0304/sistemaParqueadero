@@ -70,6 +70,7 @@ public class SecurityConfig {
                         .requestMatchers("/vehiculos/**").hasAnyRole("ADMIN", "OPERADOR")
                         .requestMatchers("/estadisticas/**").hasAnyRole("ADMIN", "OPERADOR")
                         .requestMatchers("/reportes/**").hasAnyRole("ADMIN", "OPERADOR")
+                        .requestMatchers("/alertas/**").hasAnyRole("ADMIN", "OPERADOR")
                         .requestMatchers("/tarifas/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )

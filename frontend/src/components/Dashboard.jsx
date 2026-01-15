@@ -9,6 +9,7 @@ import SkeletonLoader from './SkeletonLoader';
 import GraficoOcupacion from './graficos/GraficoOcupacion';
 import GraficoIngresos from './graficos/GraficoIngresos';
 import GraficoDistribucion from './graficos/GraficoDistribucion';
+import NotificacionesBadge from './NotificacionesBadge';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -82,7 +83,10 @@ const Dashboard = () => {
   return (
     <div>
       <div className="header">
-        <h1>Sistema de Gestión de Parqueadero</h1>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+          <h1 style={{ margin: 0 }}>Sistema de Gestión de Parqueadero</h1>
+          <NotificacionesBadge />
+        </div>
         <p style={{ marginTop: '8px', fontSize: '0.875rem', opacity: '0.9' }}>
           Usuario: {user?.username} | Rol: {user?.roles?.join(', ')}
         </p>

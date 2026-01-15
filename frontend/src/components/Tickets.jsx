@@ -4,7 +4,6 @@ import { toast } from 'react-toastify';
 import TicketService from '../services/ticketService';
 import VehiculoService from '../services/vehiculoService';
 import QRScanner from './QRScanner';
-import VehiculoAutocomplete from './VehiculoAutocomplete';
 import ConfirmModal from './ConfirmModal';
 import LoadingSpinner from './LoadingSpinner';
 import FiltrosTickets from './FiltrosTickets';
@@ -20,16 +19,13 @@ const Tickets = () => {
   const [showEntrada, setShowEntrada] = useState(false);
   const [showSalida, setShowSalida] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [vehiculoId, setVehiculoId] = useState('');
-  const [busquedaPlaca, setBusquedaPlaca] = useState('');
-  const [vehiculoSeleccionado, setVehiculoSeleccionado] = useState(null);
-  const [mostrarFormularioNuevo, setMostrarFormularioNuevo] = useState(false);
-  const [nuevoVehiculo, setNuevoVehiculo] = useState({
+  const [datosEntrada, setDatosEntrada] = useState({
     placa: '',
     tipo: 'AUTO',
     marca: '',
     modelo: '',
-    color: ''
+    color: '',
+    observaciones: ''
   });
   const [codigoSalida, setCodigoSalida] = useState('');
   const [tarifaCalculada, setTarifaCalculada] = useState(null);
@@ -113,23 +109,17 @@ const Tickets = () => {
   const handleEntrada = async (e) => {
     e.preventDefault();
     try {
-      let payload;
+      const payload = {
+        placa: datosEntrada.placa.trim(),
+        tipo: datosEntrada.tipo,
+        marca: datosEntrada.marca.trim() || null,
+        modelo: datosEntrada.modelo.trim() || null,
+        color: datosEntrada.color.trim() || null,
+        observaciones: datosEntrada.observaciones.trim() || null
+      };
       
-      // Si hay un vehículo seleccionado del autocompletado
-      if (vehiculoId) {
-        payload = { vehiculoId: parseInt(vehiculoId) };
-      } 
-      // Si se está creando un vehículo nuevo inline
-      else if (mostrarFormularioNuevo) {
-        payload = {
-          placa: nuevoVehiculo.placa,
-          tipo: nuevoVehiculo.tipo,
-          marca: nuevoVehiculo.marca,
-          modelo: nuevoVehiculo.modelo,
-          color: nuevoVehiculo.color
-        };
-      } else {
-        toast.warning('Debe seleccionar un vehículo o crear uno nuevo');
+      if (!payload.placa || payload.placa.length < 5) {
+        toast.warning('La placa debe tener al menos 5 caracteres');
         return;
       }
       
@@ -137,11 +127,7 @@ const Tickets = () => {
       setTicketRecienCreado(response); // Guardamos el ticket para mostrar botón de descarga
       toast.success('✅ Entrada registrada exitosamente');
       // No cerramos el modal inmediatamente para permitir descargar el ticket
-      setVehiculoId('');
-      setBusquedaPlaca('');
-      setVehiculoSeleccionado(null);
-      setMostrarFormularioNuevo(false);
-      setNuevoVehiculo({ placa: '', tipo: 'AUTO', marca: '', modelo: '', color: '' });
+      setDatosEntrada({ placa: '', tipo: 'AUTO', marca: '', modelo: '', color: '', observaciones: '' });
       setError('');
       cargarDatos();
     } catch (err) {
@@ -235,6 +221,7 @@ const Tickets = () => {
   const cerrarModalEntrada = () => {
     setShowEntrada(false);
     setTicketRecienCreado(null);
+    setDatosEntrada({ placa: '', tipo: 'AUTO', marca: '', modelo: '', color: '', observaciones: '' });
   };
 
   // Función para cerrar modal de salida y limpiar ticket pagado
@@ -425,141 +412,82 @@ const Tickets = () => {
             <h3 className="card-title">Registrar Entrada</h3>
             <form onSubmit={handleEntrada}>
               <div className="form-group">
-                <label>Buscar Vehículo por Placa *</label>
-                <VehiculoAutocomplete
-                  value={busquedaPlaca}
-                  onChange={(valor) => {
-                    setBusquedaPlaca(valor);
-                    setMostrarFormularioNuevo(false);
-                    if (!valor) {
-                      setVehiculoSeleccionado(null);
-                      setVehiculoId('');
-                    }
-                  }}
-                  onSelect={(vehiculo) => {
-                    setVehiculoSeleccionado(vehiculo);
-                    setVehiculoId(vehiculo.id);
-                    setBusquedaPlaca(vehiculo.placa);
-                    setMostrarFormularioNuevo(false);
-                  }}
-                  placeholder="Escriba la placa del vehículo..."
+                <label>Placa del Vehículo *</label>
+                <input
+                  type="text"
+                  value={datosEntrada.placa}
+                  onChange={(e) => setDatosEntrada({ ...datosEntrada, placa: e.target.value.toUpperCase() })}
+                  placeholder="Ej: ABC123, XYZ789"
+                  required
+                  minLength={5}
+                  maxLength={10}
+                  style={{ textTransform: 'uppercase' }}
                 />
-                {vehiculoSeleccionado && (
-                  <div style={{
-                    marginTop: '10px',
-                    padding: '10px',
-                    backgroundColor: '#e8f5e9',
-                    borderRadius: '4px',
-                    border: '1px solid #4caf50'
-                  }}>
-                    <strong>Vehículo seleccionado:</strong><br/>
-                    {vehiculoSeleccionado.placa} - {vehiculoSeleccionado.tipo} - {vehiculoSeleccionado.marca} {vehiculoSeleccionado.modelo}
-                  </div>
-                )}
-                
-                {!vehiculoSeleccionado && busquedaPlaca.length >= 6 && (
-                  <div style={{ marginTop: '10px' }}>
-                    <button 
-                      type="button"
-                      onClick={() => {
-                        setMostrarFormularioNuevo(true);
-                        setNuevoVehiculo({ ...nuevoVehiculo, placa: busquedaPlaca });
-                      }}
-                      className="btn btn-secondary"
-                      style={{ width: '100%' }}
-                    >
-                      + Crear Nuevo Vehículo con placa {busquedaPlaca}
-                    </button>
-                  </div>
-                )}
+                <small style={{ color: '#666', display: 'block', marginTop: '5px' }}>
+                  💡 Si el vehículo ya existe, se asociará automáticamente. Si no existe, se creará uno nuevo.
+                </small>
               </div>
 
-              {mostrarFormularioNuevo && (
-                <div style={{
-                  padding: '15px',
-                  backgroundColor: '#f8f9fa',
-                  borderRadius: '4px',
-                  border: '1px solid #dee2e6',
-                  marginBottom: '15px'
-                }}>
-                  <h4 style={{ marginBottom: '15px', color: '#2C3E50' }}>Datos del Nuevo Vehículo</h4>
-                  
-                  <div className="form-group">
-                    <label>Placa *</label>
-                    <input
-                      type="text"
-                      value={nuevoVehiculo.placa}
-                      onChange={(e) => setNuevoVehiculo({ ...nuevoVehiculo, placa: e.target.value.toUpperCase() })}
-                      required
-                      style={{ backgroundColor: '#e9ecef' }}
-                      readOnly
-                    />
-                  </div>
+              <div className="form-group">
+                <label>Tipo de Vehículo *</label>
+                <select
+                  value={datosEntrada.tipo}
+                  onChange={(e) => setDatosEntrada({ ...datosEntrada, tipo: e.target.value })}
+                  required
+                >
+                  <option value="AUTO">Auto</option>
+                  <option value="MOTO">Moto</option>
+                  <option value="BICICLETA">Bicicleta</option>
+                  <option value="CAMION">Camión</option>
+                </select>
+              </div>
 
-                  <div className="form-group">
-                    <label>Tipo de Vehículo *</label>
-                    <select
-                      value={nuevoVehiculo.tipo}
-                      onChange={(e) => setNuevoVehiculo({ ...nuevoVehiculo, tipo: e.target.value })}
-                      required
-                    >
-                      <option value="AUTO">Auto</option>
-                      <option value="MOTO">Moto</option>
-                      <option value="BICICLETA">Bicicleta</option>
-                      <option value="CAMION">Camión</option>
-                    </select>
-                  </div>
+              <div className="form-group">
+                <label>Marca</label>
+                <input
+                  type="text"
+                  value={datosEntrada.marca}
+                  onChange={(e) => setDatosEntrada({ ...datosEntrada, marca: e.target.value })}
+                  placeholder="Ej: Toyota, Honda, Yamaha..."
+                />
+              </div>
 
-                  <div className="form-group">
-                    <label>Marca</label>
-                    <input
-                      type="text"
-                      value={nuevoVehiculo.marca}
-                      onChange={(e) => setNuevoVehiculo({ ...nuevoVehiculo, marca: e.target.value })}
-                      placeholder="Ej: Toyota, Honda, Yamaha..."
-                    />
-                  </div>
+              <div className="form-group">
+                <label>Modelo</label>
+                <input
+                  type="text"
+                  value={datosEntrada.modelo}
+                  onChange={(e) => setDatosEntrada({ ...datosEntrada, modelo: e.target.value })}
+                  placeholder="Ej: Corolla, Civic, R6..."
+                />
+              </div>
 
-                  <div className="form-group">
-                    <label>Modelo</label>
-                    <input
-                      type="text"
-                      value={nuevoVehiculo.modelo}
-                      onChange={(e) => setNuevoVehiculo({ ...nuevoVehiculo, modelo: e.target.value })}
-                      placeholder="Ej: Corolla, Civic, R6..."
-                    />
-                  </div>
+              <div className="form-group">
+                <label>Color</label>
+                <input
+                  type="text"
+                  value={datosEntrada.color}
+                  onChange={(e) => setDatosEntrada({ ...datosEntrada, color: e.target.value })}
+                  placeholder="Ej: Rojo, Azul, Negro..."
+                />
+              </div>
 
-                  <div className="form-group">
-                    <label>Color</label>
-                    <input
-                      type="text"
-                      value={nuevoVehiculo.color}
-                      onChange={(e) => setNuevoVehiculo({ ...nuevoVehiculo, color: e.target.value })}
-                      placeholder="Ej: Rojo, Azul, Negro..."
-                    />
-                  </div>
-
-                  <button 
-                    type="button"
-                    onClick={() => {
-                      setMostrarFormularioNuevo(false);
-                      setNuevoVehiculo({ placa: '', tipo: 'AUTO', marca: '', modelo: '', color: '' });
-                    }}
-                    className="btn btn-secondary"
-                    style={{ marginTop: '10px' }}
-                  >
-                    Cancelar Nuevo Vehículo
-                  </button>
-                </div>
-              )}
+              <div className="form-group">
+                <label>Observaciones</label>
+                <textarea
+                  value={datosEntrada.observaciones}
+                  onChange={(e) => setDatosEntrada({ ...datosEntrada, observaciones: e.target.value })}
+                  placeholder="Información adicional..."
+                  rows={3}
+                />
+              </div>
 
               <button 
                 type="submit" 
-                className="btn btn-success" 
-                disabled={!vehiculoId && !mostrarFormularioNuevo}
+                className="btn btn-success"
+                style={{ width: '100%' }}
               >
-                Registrar Entrada
+                🚗 Registrar Entrada
               </button>
             </form>
 

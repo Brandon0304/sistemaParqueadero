@@ -92,9 +92,6 @@ const Dashboard = () => {
         </p>
         
         <div className="nav">
-          <button onClick={() => navigate('/vehiculos')} className="btn btn-primary">
-            Vehículos
-          </button>
           <button onClick={() => navigate('/tickets')} className="btn btn-primary">
             Tickets
           </button>

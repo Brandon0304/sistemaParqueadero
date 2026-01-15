@@ -27,6 +27,7 @@ const Tickets = () => {
   });
   const [codigoSalida, setCodigoSalida] = useState('');
   const [tarifaCalculada, setTarifaCalculada] = useState(null);
+  const [mostrarInfoTicket, setMostrarInfoTicket] = useState(false); // Nuevo: controlar visibilidad del ticket escaneado
   const [ticketRecienCreado, setTicketRecienCreado] = useState(null); // Para mostrar botón de ticket
   const [ticketRecienPagado, setTicketRecienPagado] = useState(null); // Para mostrar botón de factura
   
@@ -338,11 +339,13 @@ const Tickets = () => {
     try {
       const tarifa = await TicketService.calcularTarifa(codigo);
       setTarifaCalculada(tarifa);
-      setSuccess(`Ticket ${codigo} escaneado correctamente`);
-      setTimeout(() => setSuccess(''), 3000);
+      setMostrarInfoTicket(true); // Mostrar la info de manera persistente
+      toast.success(`✅ Ticket ${codigo} escaneado correctamente`);
     } catch (err) {
-      setError('Ticket no encontrado o no está activo');
-      setTimeout(() => setError(''), 3000);
+      const mensaje = err.response?.data?.message || 'Ticket no encontrado o no está activo';
+      setError(mensaje);
+      toast.error(mensaje);
+      setTimeout(() => setError(''), 5000);
     }
   };
 
@@ -530,20 +533,82 @@ const Tickets = () => {
               onError={(err) => setError('Error al escanear QR')}
             />
 
-            <button onClick={calcularTarifa} className="btn btn-primary" disabled={!codigoSalida}>
-              Calcular Tarifa
-            </button>
-
-            {tarifaCalculada && (
-              <div className="alert alert-info" style={{ marginTop: '20px' }}>
-                <h4>Tarifa Calculada</h4>
-                <p><strong>Monto Total:</strong> {formatearCOP(tarifaCalculada.montoTotal)}</p>
-                <p><strong>Tiempo:</strong> {tarifaCalculada.detalleCalculo}</p>
-                <p><strong>Tipo:</strong> {tarifaCalculada.tipoVehiculo}</p>
-                <button onClick={confirmarSalida} className="btn btn-success" style={{ marginTop: '10px' }}>
-                  Confirmar Salida y Pagar
+            {mostrarInfoTicket && tarifaCalculada && (
+              <div style={{
+                marginTop: '20px',
+                padding: '20px',
+                backgroundColor: '#e3f2fd',
+                border: '2px solid #2196f3',
+                borderRadius: '8px',
+                position: 'relative'
+              }}>
+                <button
+                  onClick={() => {
+                    setMostrarInfoTicket(false);
+                    setTarifaCalculada(null);
+                    setCodigoSalida('');
+                  }}
+                  style={{
+                    position: 'absolute',
+                    top: '10px',
+                    right: '10px',
+                    background: '#f44336',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '50%',
+                    width: '30px',
+                    height: '30px',
+                    cursor: 'pointer',
+                    fontSize: '18px',
+                    fontWeight: 'bold',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                  title="Cerrar"
+                >
+                  ×
+                </button>
+                
+                <h4 style={{ marginTop: 0, color: '#1976d2', marginBottom: '15px' }}>
+                  📋 Información del Ticket: {codigoSalida}
+                </h4>
+                
+                <div style={{ 
+                  backgroundColor: 'white', 
+                  padding: '15px', 
+                  borderRadius: '6px',
+                  marginBottom: '15px'
+                }}>
+                  <p style={{ margin: '8px 0' }}>
+                    <strong>Placa:</strong> {tarifaCalculada.vehiculoPlaca || 'N/A'}
+                  </p>
+                  <p style={{ margin: '8px 0' }}>
+                    <strong>Tipo de Vehículo:</strong> {tarifaCalculada.tipoVehiculo}
+                  </p>
+                  <p style={{ margin: '8px 0' }}>
+                    <strong>Tiempo Estacionado:</strong> {tarifaCalculada.detalleCalculo}
+                  </p>
+                  <p style={{ 
+                    margin: '8px 0',
+                    fontSize: '1.25rem',
+                    color: '#2e7d32',
+                    fontWeight: 'bold'
+                  }}>
+                    <strong>💰 Monto a Pagar:</strong> {formatearCOP(tarifaCalculada.montoTotal)}
+                  </p>
+                </div>
+                
+                <button onClick={confirmarSalida} className="btn btn-success" style={{ width: '100%', padding: '12px' }}>
+                  ✅ Confirmar Salida y Procesar Pago
                 </button>
               </div>
+            )}
+
+            {!mostrarInfoTicket && (
+              <button onClick={calcularTarifa} className="btn btn-primary" disabled={!codigoSalida} style={{ marginTop: '15px' }}>
+                Calcular Tarifa
+              </button>
             )}
 
             {/* Mostrar botón de descargar factura después de pagar */}

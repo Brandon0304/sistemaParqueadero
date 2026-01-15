@@ -33,6 +33,8 @@ const Tickets = () => {
   });
   const [codigoSalida, setCodigoSalida] = useState('');
   const [tarifaCalculada, setTarifaCalculada] = useState(null);
+  const [ticketRecienCreado, setTicketRecienCreado] = useState(null); // Para mostrar botón de ticket
+  const [ticketRecienPagado, setTicketRecienPagado] = useState(null); // Para mostrar botón de factura
   
   // Estados para filtros y paginación
   const [mostrarFiltros, setMostrarFiltros] = useState(false);
@@ -131,9 +133,10 @@ const Tickets = () => {
         return;
       }
       
-      await TicketService.registrarEntrada(payload);
+      const response = await TicketService.registrarEntrada(payload);
+      setTicketRecienCreado(response); // Guardamos el ticket para mostrar botón de descarga
       toast.success('✅ Entrada registrada exitosamente');
-      setShowEntrada(false);
+      // No cerramos el modal inmediatamente para permitir descargar el ticket
       setVehiculoId('');
       setBusquedaPlaca('');
       setVehiculoSeleccionado(null);
@@ -161,9 +164,10 @@ const Tickets = () => {
 
   const handleSalida = async () => {
     try {
-      await TicketService.registrarSalida(codigoSalida);
+      const response = await TicketService.registrarSalida(codigoSalida);
+      setTicketRecienPagado(response); // Guardamos el ticket para mostrar botón de factura
       toast.success('✅ Salida registrada y pago procesado');
-      setShowSalida(false);
+      // No cerramos el modal inmediatamente para permitir descargar la factura
       setCodigoSalida('');
       setTarifaCalculada(null);
       setError('');
@@ -173,6 +177,71 @@ const Tickets = () => {
       setError(mensaje);
       toast.error(mensaje);
     }
+  };
+  
+  // Función para descargar el TICKET DE ENTRADA (PDF con QR)
+  const descargarTicketEntrada = async (codigo) => {
+    try {
+      const response = await fetch(`http://localhost:8082/api/tickets/${codigo}/ticket-entrada`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (!response.ok) throw new Error('Error al descargar el ticket');
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ticket-entrada-${codigo}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      toast.success('✅ Ticket descargado');
+    } catch (err) {
+      toast.error('Error al descargar el ticket');
+    }
+  };
+
+  // Función para descargar la FACTURA DE PAGO
+  const descargarFacturaPago = async (codigo) => {
+    try {
+      const response = await fetch(`http://localhost:8082/api/tickets/${codigo}/factura-pago`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (!response.ok) throw new Error('Error al descargar la factura');
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `factura-${codigo}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      toast.success('✅ Factura descargada');
+    } catch (err) {
+      toast.error('Error al descargar la factura');
+    }
+  };
+
+  // Función para cerrar modal de entrada y limpiar ticket creado
+  const cerrarModalEntrada = () => {
+    setShowEntrada(false);
+    setTicketRecienCreado(null);
+  };
+
+  // Función para cerrar modal de salida y limpiar ticket pagado
+  const cerrarModalSalida = () => {
+    setShowSalida(false);
+    setShowConfirmModal(false);
+    setTicketRecienPagado(null);
   };
   
   const confirmarSalida = () => {
@@ -493,6 +562,39 @@ const Tickets = () => {
                 Registrar Entrada
               </button>
             </form>
+
+            {/* Mostrar botón de descargar ticket después de registrar */}
+            {ticketRecienCreado && (
+              <div style={{
+                marginTop: '20px',
+                padding: '15px',
+                backgroundColor: '#d4edda',
+                border: '1px solid #c3e6cb',
+                borderRadius: '4px'
+              }}>
+                <h4 style={{ color: '#155724', marginBottom: '10px' }}>
+                  ✅ Entrada Registrada: {ticketRecienCreado.codigo}
+                </h4>
+                <p style={{ marginBottom: '15px', color: '#155724' }}>
+                  Descargue el ticket para entregar al cliente. El código QR puede escanearse al momento de la salida.
+                </p>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button
+                    onClick={() => descargarTicketEntrada(ticketRecienCreado.codigo)}
+                    className="btn btn-primary"
+                    style={{ flex: 1 }}
+                  >
+                    📄 Descargar Ticket de Entrada (PDF con QR)
+                  </button>
+                  <button
+                    onClick={cerrarModalEntrada}
+                    className="btn btn-secondary"
+                  >
+                    Cerrar
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -518,6 +620,39 @@ const Tickets = () => {
                 <button onClick={confirmarSalida} className="btn btn-success" style={{ marginTop: '10px' }}>
                   Confirmar Salida y Pagar
                 </button>
+              </div>
+            )}
+
+            {/* Mostrar botón de descargar factura después de pagar */}
+            {ticketRecienPagado && (
+              <div style={{
+                marginTop: '20px',
+                padding: '15px',
+                backgroundColor: '#d4edda',
+                border: '1px solid #c3e6cb',
+                borderRadius: '4px'
+              }}>
+                <h4 style={{ color: '#155724', marginBottom: '10px' }}>
+                  ✅ Salida Registrada y Pago Procesado: {ticketRecienPagado.codigo}
+                </h4>
+                <p style={{ marginBottom: '15px', color: '#155724' }}>
+                  Descargue la factura como comprobante de pago.
+                </p>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button
+                    onClick={() => descargarFacturaPago(ticketRecienPagado.codigo)}
+                    className="btn btn-primary"
+                    style={{ flex: 1 }}
+                  >
+                    🧾 Descargar Factura de Pago (PDF)
+                  </button>
+                  <button
+                    onClick={cerrarModalSalida}
+                    className="btn btn-secondary"
+                  >
+                    Cerrar
+                  </button>
+                </div>
               </div>
             )}
           </div>

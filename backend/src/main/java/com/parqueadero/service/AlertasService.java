@@ -1,6 +1,6 @@
-package com.parqueadero.backend.service;
+package com.parqueadero.service;
 
-import com.parqueadero.backend.dto.AlertaDTO;
+import com.parqueadero.dto.AlertaDTO;
 import com.parqueadero.model.Configuracion;
 import com.parqueadero.model.Ticket;
 import com.parqueadero.model.Vehiculo;

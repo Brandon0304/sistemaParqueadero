@@ -1,7 +1,7 @@
-package com.parqueadero.backend.controller;
+package com.parqueadero.controller;
 
 import com.parqueadero.dto.TicketFiltroRequest;
-import com.parqueadero.backend.service.ReporteService;
+import com.parqueadero.service.ReporteService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 @RestController
-@RequestMapping("/api/reportes")
+@RequestMapping("/reportes")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")
 public class ReporteController {

@@ -1,4 +1,4 @@
-package com.parqueadero.backend.dto;
+package com.parqueadero.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

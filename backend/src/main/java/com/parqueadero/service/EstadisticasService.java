@@ -1,6 +1,6 @@
-package com.parqueadero.backend.service;
+package com.parqueadero.service;
 
-import com.parqueadero.backend.dto.*;
+import com.parqueadero.dto.*;
 import com.parqueadero.model.Ticket;
 import com.parqueadero.repository.ConfiguracionRepository;
 import com.parqueadero.repository.TicketRepository;

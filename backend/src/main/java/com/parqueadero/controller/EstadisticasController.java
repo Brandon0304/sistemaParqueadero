@@ -1,7 +1,7 @@
-package com.parqueadero.backend.controller;
+package com.parqueadero.controller;
 
-import com.parqueadero.backend.dto.*;
-import com.parqueadero.backend.service.EstadisticasService;
+import com.parqueadero.dto.*;
+import com.parqueadero.service.EstadisticasService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/estadisticas")
+@RequestMapping("/estadisticas")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")
 public class EstadisticasController {

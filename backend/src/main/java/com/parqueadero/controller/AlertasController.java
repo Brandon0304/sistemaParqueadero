@@ -1,7 +1,7 @@
-package com.parqueadero.backend.controller;
+package com.parqueadero.controller;
 
-import com.parqueadero.backend.dto.AlertaDTO;
-import com.parqueadero.backend.service.AlertasService;
+import com.parqueadero.dto.AlertaDTO;
+import com.parqueadero.service.AlertasService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/alertas")
+@RequestMapping("/alertas")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")
 public class AlertasController {

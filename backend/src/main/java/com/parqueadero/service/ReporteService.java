@@ -1,4 +1,4 @@
-package com.parqueadero.backend.service;
+package com.parqueadero.service;
 
 import com.itextpdf.kernel.colors.ColorConstants;
 import com.itextpdf.kernel.pdf.PdfDocument;

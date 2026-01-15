@@ -6,7 +6,6 @@ import { AuthProvider } from './context/AuthContext';
 import PrivateRoute from './components/PrivateRoute';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
-import Vehiculos from './components/Vehiculos';
 import Tickets from './components/Tickets';
 import TicketsActivos from './components/TicketsActivos';
 
@@ -22,15 +21,6 @@ function App() {
             element={
               <PrivateRoute>
                 <Dashboard />
-              </PrivateRoute>
-            } 
-          />
-          
-          <Route 
-            path="/vehiculos" 
-            element={
-              <PrivateRoute>
-                <Vehiculos />
               </PrivateRoute>
             } 
           />

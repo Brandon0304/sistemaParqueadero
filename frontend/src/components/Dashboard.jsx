@@ -326,16 +326,6 @@ const Dashboard = () => {
         <h2 style={{ marginBottom: '24px', fontSize: '1.25rem', fontWeight: '600' }}>Panel de Control</h2>
         <div className="grid">
           <div className="card">
-            <h3 className="card-title">Gestión de Vehículos</h3>
-            <p style={{ color: '#6b7280', marginBottom: '16px', fontSize: '0.875rem' }}>
-              Registra y administra los vehículos del parqueadero
-            </p>
-            <button onClick={() => navigate('/vehiculos')} className="btn btn-primary">
-              Acceder
-            </button>
-          </div>
-
-          <div className="card">
             <h3 className="card-title">Gestión de Tickets</h3>
             <p style={{ color: '#6b7280', marginBottom: '16px', fontSize: '0.875rem' }}>
               Gestiona las entradas y salidas del parqueadero

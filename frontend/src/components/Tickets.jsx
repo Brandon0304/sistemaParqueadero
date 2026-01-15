@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import TicketService from '../services/ticketService';
-import VehiculoService from '../services/vehiculoService';
 import QRScanner from './QRScanner';
 import ConfirmModal from './ConfirmModal';
 import LoadingSpinner from './LoadingSpinner';
@@ -12,7 +11,6 @@ import { formatearCOP } from '../utils/moneda';
 
 const Tickets = () => {
   const [tickets, setTickets] = useState([]);
-  const [vehiculos, setVehiculos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -92,10 +90,7 @@ const Tickets = () => {
         });
       }
       
-      const vehiculosData = await VehiculoService.listarTodos();
-      
       setTickets(ticketsData);
-      setVehiculos(vehiculosData);
       setError('');
     } catch (err) {
       const mensaje = 'Error al cargar los datos';

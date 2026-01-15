@@ -31,6 +31,12 @@ public class TicketController {
     @Autowired
     private PdfService pdfService;
 
+    @Autowired
+    private com.parqueadero.service.TicketPdfService ticketPdfService;
+
+    @Autowired
+    private com.parqueadero.service.ReporteService reporteService;
+
     @PostMapping("/entrada")
     @PreAuthorize("hasAnyRole('ADMIN', 'OPERADOR')")
     public ResponseEntity<TicketResponse> registrarEntrada(@Valid @RequestBody TicketEntradaRequest request) {
@@ -113,6 +119,57 @@ public class TicketController {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_PDF);
             headers.setContentDispositionFormData("attachment", "factura-" + codigo + ".pdf");
+            headers.setCacheControl("must-revalidate, post-check=0, pre-check=0");
+            
+            return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Genera el TICKET DE ENTRADA en PDF (con QR para escanear)
+     * Se genera inmediatamente después de registrar la entrada
+     */
+    @GetMapping("/{codigo}/ticket-entrada")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OPERADOR')")
+    public ResponseEntity<byte[]> descargarTicketEntrada(@PathVariable String codigo) {
+        try {
+            TicketResponse ticketResponse = ticketService.obtenerPorCodigo(codigo);
+            com.parqueadero.model.Ticket ticket = ticketService.buscarPorCodigo(codigo);
+            byte[] pdfBytes = ticketPdfService.generarTicketEntrada(ticket);
+            
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            headers.setContentDispositionFormData("attachment", "ticket-entrada-" + codigo + ".pdf");
+            headers.setCacheControl("must-revalidate, post-check=0, pre-check=0");
+            
+            return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Genera la FACTURA DE PAGO en PDF (después de pagar y salir)
+     * Reemplaza el endpoint antiguo con una factura más detallada
+     */
+    @GetMapping("/{codigo}/factura-pago")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OPERADOR')")
+    public ResponseEntity<byte[]> descargarFacturaPago(@PathVariable String codigo) {
+        try {
+            com.parqueadero.model.Ticket ticket = ticketService.buscarPorCodigo(codigo);
+            
+            // Solo se puede generar factura si el ticket está PAGADO
+            if (!"PAGADO".equals(ticket.getEstado().toString())) {
+                return ResponseEntity.badRequest().build();
+            }
+            
+            byte[] pdfBytes = reporteService.generarFacturaPdf(ticket);
+            
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            headers.setContentDispositionFormData("attachment", "factura-pago-" + codigo + ".pdf");
             headers.setCacheControl("must-revalidate, post-check=0, pre-check=0");
             
             return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);

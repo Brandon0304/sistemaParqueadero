@@ -147,6 +147,15 @@ public class TicketService {
         return convertirAResponse(ticket);
     }
 
+    /**
+     * Busca un ticket por código y retorna el modelo (no el DTO)
+     * Útil para generar PDFs que necesitan el objeto completo
+     */
+    public Ticket buscarPorCodigo(String codigo) {
+        return ticketRepository.findByCodigo(codigo)
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket", "codigo", codigo));
+    }
+
     public List<TicketResponse> listarTodos() {
         return ticketRepository.findAll().stream()
                 .map(this::convertirAResponse)

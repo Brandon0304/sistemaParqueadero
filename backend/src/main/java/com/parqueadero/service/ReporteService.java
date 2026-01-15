@@ -183,6 +183,160 @@ public class ReporteService {
     }
 
     /**
+     * Genera una FACTURA individual en PDF para un ticket PAGADO
+     * Esta factura se genera al SALIR del parqueadero
+     */
+    public byte[] generarFacturaPdf(Ticket ticket) throws IOException {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        PdfWriter writer = new PdfWriter(outputStream);
+        PdfDocument pdfDoc = new PdfDocument(writer);
+        Document document = new Document(pdfDoc);
+
+        // ===== TÍTULO =====
+        Paragraph titulo = new Paragraph("FACTURA DE PAGO")
+                .setFontSize(20)
+                .setBold()
+                .setTextAlignment(TextAlignment.CENTER)
+                .setMarginBottom(20);
+        document.add(titulo);
+
+        // ===== INFORMACIÓN DE LA FACTURA =====
+        Table infoTable = new Table(UnitValue.createPercentArray(new float[]{30, 70}))
+                .useAllAvailableWidth()
+                .setMarginBottom(20);
+
+        infoTable.addCell(createCell("Código Ticket:", true));
+        infoTable.addCell(createCell(ticket.getCodigo(), false));
+
+        infoTable.addCell(createCell("Estado:", true));
+        infoTable.addCell(createCell(ticket.getEstado().toString(), false));
+
+        infoTable.addCell(createCell("Fecha/Hora:", true));
+        infoTable.addCell(createCell(
+            java.time.LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")), 
+            false
+        ));
+
+        document.add(infoTable);
+
+        // ===== DATOS DEL VEHÍCULO =====
+        Paragraph seccionVehiculo = new Paragraph("DATOS DEL VEHÍCULO")
+                .setFontSize(14)
+                .setBold()
+                .setMarginTop(10)
+                .setMarginBottom(10);
+        document.add(seccionVehiculo);
+
+        Table vehiculoTable = new Table(UnitValue.createPercentArray(new float[]{30, 70}))
+                .useAllAvailableWidth()
+                .setMarginBottom(20);
+
+        vehiculoTable.addCell(createCell("Placa:", true));
+        vehiculoTable.addCell(createCell(ticket.getVehiculo().getPlaca(), false));
+
+        vehiculoTable.addCell(createCell("Tipo:", true));
+        vehiculoTable.addCell(createCell(ticket.getVehiculo().getTipo().toString(), false));
+
+        document.add(vehiculoTable);
+
+        // ===== DETALLE DE TIEMPO Y PAGO =====
+        Paragraph seccionPago = new Paragraph("DETALLE DE TIEMPO Y PAGO")
+                .setFontSize(14)
+                .setBold()
+                .setMarginTop(10)
+                .setMarginBottom(10);
+        document.add(seccionPago);
+
+        Table pagoTable = new Table(UnitValue.createPercentArray(new float[]{30, 70}))
+                .useAllAvailableWidth()
+                .setMarginBottom(20);
+
+        pagoTable.addCell(createCell("Entrada:", true));
+        pagoTable.addCell(createCell(
+            ticket.getFechaHoraEntrada().format(DATE_FORMATTER), 
+            false
+        ));
+
+        pagoTable.addCell(createCell("Salida:", true));
+        pagoTable.addCell(createCell(
+            ticket.getFechaHoraSalida() != null 
+                ? ticket.getFechaHoraSalida().format(DATE_FORMATTER) 
+                : "N/A",
+            false
+        ));
+
+        // Calcular tiempo de estadía
+        if (ticket.getFechaHoraSalida() != null) {
+            long minutos = java.time.Duration.between(
+                ticket.getFechaHoraEntrada(), 
+                ticket.getFechaHoraSalida()
+            ).toMinutes();
+            pagoTable.addCell(createCell("Tiempo Estadía:", true));
+            pagoTable.addCell(createCell(
+                String.format("%d horas y %d minutos", minutos / 60, minutos % 60),
+                false
+            ));
+        }
+
+        pagoTable.addCell(createCell("Operador Entrada:", true));
+        pagoTable.addCell(createCell(ticket.getUsuarioEntrada().getUsername(), false));
+
+        if (ticket.getUsuarioSalida() != null) {
+            pagoTable.addCell(createCell("Operador Salida:", true));
+            pagoTable.addCell(createCell(ticket.getUsuarioSalida().getUsername(), false));
+        }
+
+        document.add(pagoTable);
+
+        // ===== MONTO A PAGAR (destacado) =====
+        Table montoTable = new Table(UnitValue.createPercentArray(new float[]{50, 50}))
+                .useAllAvailableWidth()
+                .setMarginTop(20)
+                .setMarginBottom(20)
+                .setBorder(new com.itextpdf.layout.borders.SolidBorder(ColorConstants.BLACK, 2));
+
+        montoTable.addCell(createCell("TOTAL PAGADO:", true)
+                .setFontSize(16)
+                .setBackgroundColor(ColorConstants.LIGHT_GRAY));
+        montoTable.addCell(createCell(
+                String.format("$%.2f", ticket.getMontoTotal()),
+                false
+        ).setFontSize(16)
+         .setBold()
+         .setBackgroundColor(ColorConstants.LIGHT_GRAY));
+
+        document.add(montoTable);
+
+        // ===== OBSERVACIONES =====
+        if (ticket.getObservaciones() != null && !ticket.getObservaciones().isEmpty()) {
+            Paragraph observaciones = new Paragraph("Observaciones: " + ticket.getObservaciones())
+                    .setFontSize(10)
+                    .setItalic()
+                    .setMarginTop(10);
+            document.add(observaciones);
+        }
+
+        // ===== PIE DE PÁGINA =====
+        Paragraph footer = new Paragraph("\nGracias por su visita\nSistema de Parqueadero")
+                .setFontSize(10)
+                .setTextAlignment(TextAlignment.CENTER)
+                .setMarginTop(30);
+        document.add(footer);
+
+        document.close();
+        return outputStream.toByteArray();
+    }
+
+    private com.itextpdf.layout.element.Cell createCell(String text, boolean isHeader) {
+        com.itextpdf.layout.element.Cell cell = new com.itextpdf.layout.element.Cell()
+                .add(new Paragraph(text));
+        if (isHeader) {
+            cell.setBold();
+        }
+        return cell;
+    }
+
+    /**
      * Obtiene tickets aplicando filtros
      */
     private List<Ticket> obtenerTicketsFiltrados(TicketFiltroRequest filtro) {
